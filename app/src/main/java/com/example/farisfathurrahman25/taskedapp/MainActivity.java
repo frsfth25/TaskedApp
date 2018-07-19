@@ -8,6 +8,8 @@ Reference(s):
  */
 
 import android.app.ProgressDialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -15,10 +17,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
-
-import com.google.gson.JsonObject;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -32,6 +33,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -45,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private ListView lvItems;
     private String inputURL = "";
 
+    private ProgressDialog progressDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,116 +59,29 @@ public class MainActivity extends AppCompatActivity {
         inputText = findViewById(R.id.editText);
         searchButton = findViewById(R.id.button);
         lvItems = findViewById(R.id.list_item);
-
     }
 
     public void buttonClicked(View view) {
 
-        if (inputText.getText().toString() == "") {
-            Toast.makeText(this, "Search Query is Empty!", Toast.LENGTH_SHORT);
+        if (inputText.getText().toString().isEmpty()) {
+            Toast.makeText(this, "Search Query is Empty!", Toast.LENGTH_SHORT).show();
             return;
         }
 
         inputURL = "https://www.googleapis.com/books/v1/volumes?q=%7B";
-        String tmpInput = inputText.getText().toString();
+        String tmpInput = inputText.getText().toString().trim();
         tmpInput = tmpInput.replaceAll(" ", "_");
+
+        Log.d(TAG, tmpInput);
 
         inputURL += tmpInput;
 
- /*       Ion.with(this)
-                .load(inputURL)
-                .asJsonObject()
-                .setCallback(new FutureCallback<JsonObject>() {
-                    @Override
-                    public void onCompleted(Exception e, JsonObject result) {
-                        Log.i(TAG, result.toString());
-                        parseResult(result);
-                    }
-                }); */
-
-/*        //inputURL += URLEncoder.encode(addr, "UTF-8");
-        URL url = new URL(inputURL);
-
-        // read from the URL
-        Scanner scan = new Scanner(url.openStream());
-        String str = new String();
-        while (scan.hasNext())
-            str += scan.nextLine();
-        scan.close();
-*/
         bookList = new ArrayList<>();
 
         new JSONAsyncTask().execute(inputURL);
 
         bookAdapter = new BookAdapter(bookList, getApplicationContext());
         lvItems.setAdapter(bookAdapter);
-
- /*       try {
-            JSONObject obj = new JSONObject(str);
-            //String pageName = obj.getJSONObject("pageInfo").getString("pageName");
-
-            JSONArray arr = obj.getJSONArray("items");
-            for (int i = 0; i < arr.length(); i++)
-            {
-                String title = arr.getJSONObject(i).getString("title");
-
-                String authors = "";
-                JSONArray arr2 = obj.getJSONArray("authors");
-                for (int j=0; j<arr2.length(); j++)
-                {
-                    if (j!=arr2.length()-1)
-                        authors += (arr2.getString(j) + ",");
-                    else
-                        authors += (arr2.getString(j) + ",");
-                }
-
-                result.add(new Book(title, "noImage", authors, 3));
-            }
-
-            itemCompletionResult(result);
-        } catch (JSONException e)
-        {
-            e.printStackTrace();
-        } */
-
-
-    }
-
-    private void parseResult(JSONObject obj) {
-
-    }
-
-    private void parseResult(JsonObject obj) {
-
-        bookList = new ArrayList<>();
-
-        try {
-            JSONArray allBooks = new JSONArray(obj);
-            for (int i = 0; i < allBooks.length(); i++) {
-                JSONObject bookObject = allBooks.getJSONObject(i);
-                //result.add(new Book(bookObject.getString("")))
-            }
-
-            itemCompletionResult(bookList);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        //String result = obj.getAsJsonObject("value").get("joke").getAsString();
-        //TextView t = findViewById(R.id.editText);
-        //t.setText(result);
-
-
-    }
-
-    public void itemCompletionResult(ArrayList<Book> result) {
-        if (result != null) {
-            bookAdapter = new BookAdapter(result, getApplicationContext());
-            lvItems.setAdapter(bookAdapter);
-        } else {
-            Toast.makeText(this, "No Result Found!", Toast.LENGTH_SHORT);
-        }
-
     }
 
     class JSONAsyncTask extends AsyncTask<String, Void, Boolean> {
@@ -203,6 +122,8 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject jsonO = new JSONObject(data);
                     JSONArray jArray = jsonO.getJSONArray("items");
 
+                    Log.i(TAG, "" + jArray.length());
+
                     for (int i = 0; i < jArray.length(); i++) {
                         JSONObject object = jArray.getJSONObject(i);
                         JSONObject volumeInfo = object.getJSONObject("volumeInfo");
@@ -212,6 +133,34 @@ public class MainActivity extends AppCompatActivity {
 
                         //getting json object values from json array
                         book.setTitle(volumeInfo.getString("title"));
+
+                        if (volumeInfo.has("authors")) {
+                            JSONArray autArr = volumeInfo.getJSONArray("authors");
+                            String author = autArr.getString(0);
+
+                            Log.i(TAG, author);
+
+                            book.setAuthor(author);
+                        }
+
+
+                        try {
+                            //URL uri = new URL(volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail"));
+                            //ImageDownloader downloader = new ImageDownloader();
+                            Log.i(TAG, volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail"));
+                            //downloader.execute(uri);
+
+                            book.setImageURL(volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail"));
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error on URL:" + e.getLocalizedMessage());
+                        }
+
+                        if (volumeInfo.has("averageRating")) {
+                            book.setRating(Float.parseFloat(volumeInfo.getString("averageRating")));
+                        } else {
+
+                        }
+
                         //rev.setComment(object.getString("comment"));
                         //rev.setUsefulness(object.getString("usefulness"));
 
@@ -245,5 +194,68 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private class ImageDownloader extends AsyncTask<URL, Integer, Bitmap> {
 
+        @Override
+        protected void onPreExecute() {
+            //super.onPreExecute();
+            Log.i(TAG, "onPreExecute is called.");
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setTitle("Image is being downloaded...");
+            progressDialog.setMax(100);
+            progressDialog.setProgress(0);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog.show();
+        }
+
+        @Override
+        protected Bitmap doInBackground(URL... urls) {
+            Log.i(TAG, "doInBackground is called.");
+            Log.i(TAG, "User URL param count =" + urls.length);
+            URL currentURL = urls[0];
+            Bitmap resultingBitmap;
+
+            try {
+                for (int i = 0; i < 10; i++) {
+                    Thread.sleep(100);
+                    publishProgress(i + 1);
+                }
+
+                //now download image
+                URLConnection connection = currentURL.openConnection();
+                connection.connect();
+                InputStream is = connection.getInputStream();
+                if (is != null) {
+                    resultingBitmap = BitmapFactory.decodeStream(is);
+                    return resultingBitmap;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, e.getLocalizedMessage());
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            //super.onProgressUpdate(values);
+            Log.i(TAG, "onProgressUpdate is called.");
+            int currentVal = values[0];
+            progressDialog.setProgress(currentVal * 10);
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            //super.onPostExecute(bitmap);
+            Log.i(TAG, "onPostExecute is called.");
+            ImageView imgView = findViewById(R.id.thumbnailView);
+            if (bitmap != null) {
+                imgView.setImageBitmap(bitmap);
+            } else {
+                Log.i(TAG, "There is no image on the URL.");
+            }
+
+            progressDialog.hide();
+
+        }
+    }
 }

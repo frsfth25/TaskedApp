@@ -5,7 +5,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
@@ -28,7 +32,6 @@ public class BookAdapter extends ArrayAdapter<Book> {
                 .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         Resource = resource;
         this.bookSet = objects;
-
     }
 
     @Override
@@ -46,7 +49,9 @@ public class BookAdapter extends ArrayAdapter<Book> {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             convertView = inflater.inflate(R.layout.book_item, parent, false);
             viewHolder.txtTitle = convertView.findViewById(R.id.textView);
+            viewHolder.imgView = convertView.findViewById(R.id.thumbnailView);
             viewHolder.txtAuthor = convertView.findViewById(R.id.textView2);
+            viewHolder.rateBar = convertView.findViewById(R.id.ratingBar);
 
             result = convertView;
 
@@ -59,7 +64,10 @@ public class BookAdapter extends ArrayAdapter<Book> {
         lastPosition = position;
 
         viewHolder.txtTitle.setText(bookModel.getTitle());
+        //viewHolder.imgView.setImageBitmap();
+        Picasso.get().load(bookModel.getImageURL()).into(viewHolder.imgView);
         viewHolder.txtAuthor.setText(bookModel.getAuthor());
+        viewHolder.rateBar.setRating(bookModel.getRating());
 
 /*        StringBuilder stb = new StringBuilder();
         for (int i=1; i<=dataModel.getLevel(); i++)
@@ -78,9 +86,9 @@ public class BookAdapter extends ArrayAdapter<Book> {
     // View lookup cache
     private static class ViewHolder {
         TextView txtTitle;
-        TextView txtImage;
+        ImageView imgView;
         TextView txtAuthor;
-        TextView txtRating;
+        RatingBar rateBar;
 
     }
 }

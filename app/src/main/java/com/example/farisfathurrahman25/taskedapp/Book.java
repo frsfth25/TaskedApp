@@ -4,12 +4,12 @@ public class Book {
     private String title;
     private String imageURL;
     private String author;
-    private int rating;
+    private float rating;
 
     public Book() {
     }
 
-    public Book(String title, String imageURL, String author, int rating) {
+    public Book(String title, String imageURL, String author, float rating) {
         this.title = title;
         this.imageURL = imageURL;
         this.author = author;
@@ -40,11 +40,11 @@ public class Book {
         this.author = author;
     }
 
-    public int getRating() {
+    public float getRating() {
         return rating;
     }
 
-    public void setRating(int rating) {
+    public void setRating(float rating) {
         this.rating = rating;
     }
 }
